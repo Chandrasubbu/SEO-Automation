@@ -30,7 +30,6 @@ export async function POST(req: NextRequest) {
                         userId: userId || null,
                         projectId: projectId || null,
                         url: auditResult.url,
-                        region: auditResult.auditRegion,
                         overallScore: auditResult.overallScore,
                         crawlabilityScore: auditResult.crawlabilityScore,
                         speedScore: auditResult.speedScore,
