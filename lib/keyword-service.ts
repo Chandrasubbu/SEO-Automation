@@ -30,11 +30,22 @@ export interface KeywordResearchResult {
  * Supports multiple providers and includes mock data for development
  */
 export class KeywordService {
-    private provider: 'semrush' | 'ahrefs' | 'dataforseo' | 'mock'
+    private provider: 'semrush' | 'ahrefs' | 'dataforseo' | 'serpapi' | 'mock'
     private apiKey: string
 
     constructor() {
-        if (process.env.SEMRUSH_API_KEY) {
+        const keywordProvider = (process.env.KEYWORD_API_KEY || '').toLowerCase()
+        const serpApiKey = process.env.SERP_API_KEY || process.env.SERPAPI_KEY
+
+        // Validation requested by user
+        if (process.env.KEYWORD_API_KEY === 'SERPAPI' && !process.env.SERP_API_KEY) {
+            console.warn("No SERP API configured")
+        }
+
+        if (keywordProvider === 'serpapi' && serpApiKey) {
+            this.provider = 'serpapi'
+            this.apiKey = serpApiKey
+        } else if (process.env.SEMRUSH_API_KEY) {
             this.provider = 'semrush'
             this.apiKey = process.env.SEMRUSH_API_KEY
         } else if (process.env.AHREFS_API_KEY) {
@@ -63,6 +74,10 @@ export class KeywordService {
                 return await this.researchWithAhrefs(seedKeyword)
             case 'dataforseo':
                 return await this.researchWithDataForSEO(seedKeyword, location, language)
+            case 'serpapi':
+                // For now use mock data as SerpAPI primarily focuses on SERP,
+                // but can be extended to use their keyword endpoints if needed.
+                return this.getMockData(seedKeyword)
             case 'mock':
                 return this.getMockData(seedKeyword)
             default:

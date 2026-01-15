@@ -43,8 +43,9 @@ export class SerpService {
     private provider: 'serpapi' | 'dataforseo' | 'mock'
 
     constructor() {
-        if (process.env.SERPAPI_KEY) {
-            this.apiKey = process.env.SERPAPI_KEY
+        const serpApiKey = process.env.SERP_API_KEY || process.env.SERPAPI_KEY
+        if (serpApiKey) {
+            this.apiKey = serpApiKey
             this.provider = 'serpapi'
         } else if (process.env.DATAFORSEO_LOGIN && process.env.DATAFORSEO_PASSWORD) {
             this.apiKey = Buffer.from(
