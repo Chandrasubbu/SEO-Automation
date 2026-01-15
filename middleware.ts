@@ -1,5 +1,9 @@
-import { auth } from "@/lib/auth"
+import NextAuth from "next-auth"
+import { authConfig } from "@/lib/auth.config"
 import { NextResponse } from "next/server"
+
+// Use a separate auth instance for middleware to avoid bundling Prisma/bcrypt
+const { auth } = NextAuth(authConfig)
 
 // Routes that require authentication
 const protectedRoutes = [
