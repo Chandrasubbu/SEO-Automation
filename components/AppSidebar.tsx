@@ -64,7 +64,7 @@ function UserProfile() {
 }
 
 const sidebarItems = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
+    { name: "SEO Blueprint Generator", href: "/", icon: LayoutDashboard },
     { name: "Projects", href: "/projects", icon: Briefcase },
     { name: "Keyword Research", href: "/keyword-research", icon: Search },
     { name: "SERP Analysis", href: "/serp-analysis", icon: LineChart },
