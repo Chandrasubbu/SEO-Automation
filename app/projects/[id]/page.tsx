@@ -6,15 +6,16 @@ export const metadata = {
 };
 
 interface ProjectPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default function ProjectPage({ params }: ProjectPageProps) {
+export default async function ProjectPage({ params }: ProjectPageProps) {
+  const { id } = await params;
   return (
     <main className="flex-1 md:ml-64 p-4 md:p-8">
-      <ProjectDetails projectId={params.id} />
+      <ProjectDetails projectId={id} />
     </main>
   );
 }

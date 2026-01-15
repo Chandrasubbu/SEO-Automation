@@ -7,7 +7,7 @@ interface Params {
 }
 
 // GET single project with all websites
-export async function GET(req: NextRequest, context: any) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, context: any) {
       );
     }
 
-    const { id } = context.params;
+    const { id } = await params;
 
     const project = await prisma.seoProject.findFirst({
       where: {
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest, context: any) {
 }
 
 // PUT update project
-export async function PUT(req: NextRequest, context: any) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -85,7 +85,7 @@ export async function PUT(req: NextRequest, context: any) {
       );
     }
 
-    const { id } = context.params;
+    const { id } = await params;
     const { name, description, targetKeyword, status } = await req.json();
 
     const project = await prisma.seoProject.update({
@@ -112,7 +112,7 @@ export async function PUT(req: NextRequest, context: any) {
 }
 
 // DELETE project
-export async function DELETE(req: NextRequest, context: any) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -133,7 +133,7 @@ export async function DELETE(req: NextRequest, context: any) {
       );
     }
 
-    const { id } = context.params;
+    const { id } = await params;
 
     await prisma.seoProject.delete({
       where: { id }

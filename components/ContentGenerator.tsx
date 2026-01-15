@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, FileText, Download, Copy, Check } from 'lucide-react'
@@ -31,12 +31,12 @@ export function ContentGenerator() {
     const [copied, setCopied] = useState(false)
 
     // Fetch templates on mount
-    useState(() => {
+    useEffect(() => {
         fetch('/api/content/article/generate')
             .then(res => res.json())
             .then(data => setTemplates(data.templates || []))
             .catch(console.error)
-    })
+    }, [])
 
     const generateOutline = async () => {
         if (!topic.trim() || !keyword.trim()) {

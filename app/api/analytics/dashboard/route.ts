@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
         let totalClicks = 0;
         let totalImpressions = 0;
 
-        performanceData.forEach((record: any) => {
+        performanceData.forEach((record: { date: Date; clicks: number; impressions: number; position: number }) => {
             const dateKey = record.date.toISOString().split('T')[0];
 
             if (!chartDataMap.has(dateKey)) {

@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 // GET all websites for a project
-export async function GET(req: NextRequest, context: any) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, context: any) {
       );
     }
 
-    const { id } = context.params;
+    const { id } = await params;
 
     // Verify project ownership
     const project = await prisma.seoProject.findFirst({
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest, context: any) {
 }
 
 // POST add website to project
-export async function POST(req: NextRequest, context: any) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest, context: any) {
       );
     }
 
-    const { id } = context.params;
+    const { id } = await params;
     const { url, type = 'competitor', notes } = await req.json();
 
     if (!url) {
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest, context: any) {
 }
 
 // DELETE website from project
-export async function DELETE(req: NextRequest, context: any) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
@@ -159,7 +159,7 @@ export async function DELETE(req: NextRequest, context: any) {
       );
     }
 
-    const { id } = context.params;
+    const { id } = await params;
     const { websiteId } = await req.json();
 
     if (!websiteId) {
