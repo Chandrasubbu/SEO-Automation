@@ -262,7 +262,7 @@ class TechnicalAuditService {
             this.checkMobile($),
             this.checkSecurity(normalizedUrl, $),
             this.checkStructure($, normalizedUrl),
-            this.checkContent($),
+            this.checkContent($, normalizedUrl),
             this.checkUX($)
         ])
 
@@ -676,7 +676,10 @@ class TechnicalAuditService {
     /**
      * Check content & on-page technicals
      */
-    async checkContent($: cheerio.CheerioAPI): Promise<ContentResult> {
+    async checkContent($: cheerio.CheerioAPI, url: string): Promise<ContentResult> {
+        // Extract domain from URL
+        const urlObj = new URL(url)
+        
         // Check for duplicate title/description
         const titles = $("title").map((_, el) => $(el).text()).get()
         const descriptions = $('meta[name="description"]').map((_, el) => $(el).attr("content")).get()
@@ -769,7 +772,13 @@ class TechnicalAuditService {
         // External links validation
         const externalLinks = $("a[href^='http']").filter((_, el) => {
             const href = $(el).attr("href") || ""
-            return !href.includes(location.hostname)
+            try {
+                const hrefUrl = new URL(href)
+                return hrefUrl.hostname !== urlObj.hostname
+            } catch {
+                // If URL parsing fails, assume it's external
+                return true
+            }
         })
         const externalLinkCount = externalLinks.length
         const hasRelevantLinks = externalLinkCount > 0
@@ -1374,14 +1383,6 @@ class TechnicalAuditService {
         timezone: string
     }> {
         try {
-            // Try to get hosting information from the response headers
-            const response = await fetch(url, {
-                headers: {
-                    "User-Agent": this.userAgent,
-                },
-                redirect: "follow"
-            })
-
             // Extract domain from URL
             const urlObj = new URL(url)
             const domain = urlObj.hostname
@@ -1399,10 +1400,24 @@ class TechnicalAuditService {
 
             // Check if domain has country-specific TLD
             for (const [tld, location] of Object.entries(regionMap)) {
+                // Check if domain ends with the TLD (handles subdomains like www.example.ca)
                 if (domain.endsWith(tld)) {
                     return location
                 }
+                // Also check if domain matches the TLD pattern (handles direct domains like example.ca)
+                const domainPattern = new RegExp(tld.replace(/\./g, '\\.') + '$')
+                if (domainPattern.test(domain)) {
+                    return location
+                }
             }
+
+            // Try to get hosting information from the response headers
+            const response = await fetch(url, {
+                headers: {
+                    "User-Agent": this.userAgent,
+                },
+                redirect: "follow"
+            })
 
             // Check CloudFlare headers for country info
             const cfCountry = response.headers.get("cf-ipcountry")
@@ -1433,7 +1448,9 @@ class TechnicalAuditService {
                 city: "Unknown",
                 timezone: "America/New_York"
             }
-        } catch {
+        } catch (error) {
+            // Log error for debugging but don't let it break the audit
+            console.warn(`Failed to detect server location for ${url}:`, error)
             // Return default on error
             return {
                 country: "United States",
