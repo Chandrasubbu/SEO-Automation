@@ -176,10 +176,10 @@ function CategoryCard({
                                     <div
                                         key={idx}
                                         className={`text-sm p-2 rounded ${issue.severity === 'critical'
-                                                ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-                                                : issue.severity === 'warning'
-                                                    ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300'
-                                                    : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                                            ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                                            : issue.severity === 'warning'
+                                                ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300'
+                                                : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                                             }`}
                                     >
                                         <div className="flex items-start gap-2">
@@ -244,7 +244,7 @@ export function TechnicalAudit() {
             const response = await fetch("/api/technical-audit", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     url: url.trim(),
                     region: region || undefined // Only include if specified
                 })
@@ -268,9 +268,24 @@ export function TechnicalAudit() {
         if (!result) return
 
         const auditFrom = result.auditRegion ? `Audit Region: ${result.auditRegion}\n` : ""
-        const serverLocation = result.serverLocation 
+        const serverLocation = result.serverLocation
             ? `Server Location: ${result.serverLocation.city}, ${result.serverLocation.country} (${result.serverLocation.timezone})\n`
             : ""
+
+        // Extract content details for enhanced report
+        const contentDetails = result.content || {}
+        const titleTag = contentDetails.titleTag || {}
+        const metaDescription = contentDetails.metaDescription || {}
+        const readability = contentDetails.readability || {}
+        const externalLinks = contentDetails.externalLinks || {}
+
+        const contentSection = `
+Content SEO Details:
+- Title Tag: ${titleTag.exists ? `${titleTag.length} chars (${titleTag.isOptimal ? 'Optimal' : 'Needs work'})` : 'Missing'}
+- Meta Description: ${metaDescription.exists ? `${metaDescription.length} chars (${metaDescription.isOptimal ? 'Optimal' : 'Needs work'})` : 'Missing'}
+- Readability: ${readability.score}/100 (${readability.grade})
+- External Links: ${externalLinks.count} (${externalLinks.hasRelevantLinks ? 'Good' : 'None found'})
+`.trim()
 
         const report = `
 Technical SEO Audit Report
@@ -287,6 +302,8 @@ Category Scores:
 - Structure: ${result.structureScore}/100
 - Content: ${result.contentScore}/100
 - UX: ${result.uxScore}/100
+
+${contentSection}
 
 Issues Found: ${result.issues.length}
 ${result.issues.map(i => `- [${i.severity.toUpperCase()}] ${i.title}: ${i.description}`).join('\n')}
@@ -338,7 +355,7 @@ ${result.recommendations.slice(0, 5).map(r => `- [${r.priority.toUpperCase()}] $
                             onKeyDown={(e) => e.key === "Enter" && handleAudit()}
                         />
                     </div>
-                    
+
                     <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             Audit Region
@@ -355,7 +372,7 @@ ${result.recommendations.slice(0, 5).map(r => `- [${r.priority.toUpperCase()}] $
                             ))}
                         </select>
                     </div>
-                    
+
                     <div className="flex items-end">
                         <Button
                             onClick={handleAudit}
@@ -505,18 +522,18 @@ ${result.recommendations.slice(0, 5).map(r => `- [${r.priority.toUpperCase()}] $
                                 <div
                                     key={idx}
                                     className={`p-4 rounded-lg border-l-4 ${rec.priority === 'high'
-                                            ? 'bg-red-50 dark:bg-red-900/10 border-red-500'
-                                            : rec.priority === 'medium'
-                                                ? 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-500'
-                                                : 'bg-green-50 dark:bg-green-900/10 border-green-500'
+                                        ? 'bg-red-50 dark:bg-red-900/10 border-red-500'
+                                        : rec.priority === 'medium'
+                                            ? 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-500'
+                                            : 'bg-green-50 dark:bg-green-900/10 border-green-500'
                                         }`}
                                 >
                                     <div className="flex items-start gap-3">
                                         <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${rec.priority === 'high'
-                                                ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200'
-                                                : rec.priority === 'medium'
-                                                    ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200'
-                                                    : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'
+                                            ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200'
+                                            : rec.priority === 'medium'
+                                                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200'
+                                                : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'
                                             }`}>
                                             {rec.priority}
                                         </span>
@@ -561,10 +578,10 @@ ${result.recommendations.slice(0, 5).map(r => `- [${r.priority.toUpperCase()}] $
                                         <tr key={idx} className="border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
                                             <td className="py-2 px-3">
                                                 <span className={`px-2 py-1 rounded text-xs font-medium ${issue.severity === 'critical'
-                                                        ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200'
-                                                        : issue.severity === 'warning'
-                                                            ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200'
-                                                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200'
+                                                    : issue.severity === 'warning'
+                                                        ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200'
+                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
                                                     }`}>
                                                     {issue.severity}
                                                 </span>

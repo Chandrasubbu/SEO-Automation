@@ -157,6 +157,30 @@ export interface ContentResult {
         hierarchy: string[]
         issues: string[]
     }
+    titleTag: {
+        exists: boolean
+        content: string | null
+        length: number
+        isOptimal: boolean
+        issues: string[]
+    }
+    metaDescription: {
+        exists: boolean
+        content: string | null
+        length: number
+        isOptimal: boolean
+        issues: string[]
+    }
+    readability: {
+        score: number
+        grade: string
+        issues: string[]
+    }
+    externalLinks: {
+        count: number
+        hasRelevantLinks: boolean
+        issues: string[]
+    }
 }
 
 export interface UXResult {
@@ -190,7 +214,7 @@ export interface UXResult {
  */
 class TechnicalAuditService {
     private userAgent = "Mozilla/5.0 (compatible; SEOAuditBot/1.0)"
-    
+
     // Proxy endpoints for different regions (simulated with headers)
     private regionHeaders: Record<string, Record<string, string>> = {
         "US": { "CloudFlare-IPCountry": "US", "X-Audit-Region": "US-East" },
@@ -215,7 +239,7 @@ class TechnicalAuditService {
 
         // Detect server location
         const serverLocation = await this.detectServerLocation(normalizedUrl)
-        
+
         // Use detected region or provided target region
         const auditRegion = targetRegion || serverLocation.region || "US"
 
@@ -700,6 +724,61 @@ class TechnicalAuditService {
         if (h1Count > 1) headingIssues.push(`Multiple H1 tags found (${h1Count})`)
         if (h2Count === 0 && h1Count > 0) headingIssues.push("No H2 tags found")
 
+        // Title tag validation
+        const titleContent = titles[0] || null
+        const titleLength = titleContent ? titleContent.length : 0
+        const titleIssues: string[] = []
+        const titleIsOptimal = titleLength > 0 && titleLength <= 60
+
+        if (!titleContent) {
+            titleIssues.push("No title tag found")
+        } else if (titleLength > 60) {
+            titleIssues.push(`Title too long (${titleLength} characters, should be under 60)`)
+        } else if (titleLength < 10) {
+            titleIssues.push(`Title too short (${titleLength} characters, should be at least 10)`)
+        }
+
+        // Meta description validation
+        const metaDescriptionContent = descriptions[0] || null
+        const metaDescriptionLength = metaDescriptionContent ? metaDescriptionContent.length : 0
+        const metaDescriptionIssues: string[] = []
+        const metaDescriptionIsOptimal = metaDescriptionLength > 0 && metaDescriptionLength <= 160
+
+        if (!metaDescriptionContent) {
+            metaDescriptionIssues.push("No meta description found")
+        } else if (metaDescriptionLength > 160) {
+            metaDescriptionIssues.push(`Meta description too long (${metaDescriptionLength} characters, should be under 160)`)
+        } else if (metaDescriptionLength < 50) {
+            metaDescriptionIssues.push(`Meta description too short (${metaDescriptionLength} characters, should be at least 50)`)
+        }
+
+        // Readability scoring
+        const bodyText = $("body").text()
+        const wordCount = bodyText.split(/\s+/).length
+        const readabilityScore = this.calculateReadabilityScore(bodyText)
+        const readabilityGrade = this.getReadabilityGrade(readabilityScore)
+        const readabilityIssues: string[] = []
+
+        if (readabilityScore < 60) {
+            readabilityIssues.push("Content may be too complex for average readers")
+        }
+        if (wordCount < 300) {
+            readabilityIssues.push("Content may be too short for good SEO")
+        }
+
+        // External links validation
+        const externalLinks = $("a[href^='http']").filter((_, el) => {
+            const href = $(el).attr("href") || ""
+            return !href.includes(location.hostname)
+        })
+        const externalLinkCount = externalLinks.length
+        const hasRelevantLinks = externalLinkCount > 0
+        const externalLinkIssues: string[] = []
+
+        if (externalLinkCount === 0) {
+            externalLinkIssues.push("No external links found - consider adding authoritative sources")
+        }
+
         return {
             duplicateContent: {
                 hasDuplicates: duplicateElements.length > 0,
@@ -722,8 +801,99 @@ class TechnicalAuditService {
                 h3Count,
                 hierarchy: headings.slice(0, 10),
                 issues: headingIssues
+            },
+            titleTag: {
+                exists: !!titleContent,
+                content: titleContent,
+                length: titleLength,
+                isOptimal: titleIsOptimal,
+                issues: titleIssues
+            },
+            metaDescription: {
+                exists: !!metaDescriptionContent,
+                content: metaDescriptionContent,
+                length: metaDescriptionLength,
+                isOptimal: metaDescriptionIsOptimal,
+                issues: metaDescriptionIssues
+            },
+            readability: {
+                score: readabilityScore,
+                grade: readabilityGrade,
+                issues: readabilityIssues
+            },
+            externalLinks: {
+                count: externalLinkCount,
+                hasRelevantLinks,
+                issues: externalLinkIssues
             }
         }
+    }
+
+    /**
+     * Calculate readability score using Flesch Reading Ease formula
+     */
+    private calculateReadabilityScore(text: string): number {
+        if (!text || text.length === 0) return 0
+
+        // Count sentences (simple heuristic)
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length
+        if (sentences === 0) return 100
+
+        // Count words
+        const words = text.split(/\s+/).filter(w => w.length > 0).length
+        if (words === 0) return 0
+
+        // Count syllables (simple heuristic)
+        const syllables = this.countSyllables(text)
+
+        // Flesch Reading Ease formula
+        const score = 206.835 - (1.015 * (words / sentences)) - (84.6 * (syllables / words))
+
+        return Math.max(0, Math.min(100, Math.round(score)))
+    }
+
+    /**
+     * Count syllables in text (simple heuristic)
+     */
+    private countSyllables(text: string): number {
+        const words = text.toLowerCase().split(/\s+/)
+        let totalSyllables = 0
+
+        for (const word of words) {
+            if (word.length === 0) continue
+
+            // Remove non-alphabetic characters
+            const cleanWord = word.replace(/[^a-z]/g, '')
+            if (cleanWord.length === 0) continue
+
+            // Count vowel groups
+            const vowelGroups = cleanWord.match(/[aeiouy]+/g)
+            let syllableCount = vowelGroups ? vowelGroups.length : 0
+
+            // Subtract silent 'e' at the end
+            if (cleanWord.endsWith('e') && syllableCount > 1) {
+                syllableCount--
+            }
+
+            // Every word has at least one syllable
+            syllableCount = Math.max(1, syllableCount)
+            totalSyllables += syllableCount
+        }
+
+        return totalSyllables
+    }
+
+    /**
+     * Get readability grade based on score
+     */
+    private getReadabilityGrade(score: number): string {
+        if (score >= 90) return "Very Easy"
+        if (score >= 80) return "Easy"
+        if (score >= 70) return "Fairly Easy"
+        if (score >= 60) return "Standard"
+        if (score >= 50) return "Fairly Difficult"
+        if (score >= 30) return "Difficult"
+        return "Very Difficult"
     }
 
     /**
@@ -844,11 +1014,31 @@ class TechnicalAuditService {
     private calculateContentScore(result: ContentResult): number {
         let score = 100
 
+        // Original checks
         if (result.duplicateContent.hasDuplicates) score -= 15
         if (!result.canonicalTag.exists) score -= 10
         if (!result.structuredData.exists) score -= 15
         if (!result.structuredData.isValid) score -= 10
         score -= result.headings.issues.length * 10
+
+        // New SEO checks from PDF
+        // Title tag validation
+        if (!result.titleTag.exists) score -= 20
+        else if (!result.titleTag.isOptimal) score -= 10
+        score -= result.titleTag.issues.length * 5
+
+        // Meta description validation
+        if (!result.metaDescription.exists) score -= 15
+        else if (!result.metaDescription.isOptimal) score -= 8
+        score -= result.metaDescription.issues.length * 4
+
+        // Readability scoring
+        if (result.readability.score < 60) score -= 10
+        score -= result.readability.issues.length * 3
+
+        // External links validation
+        if (!result.externalLinks.hasRelevantLinks) score -= 5
+        score -= result.externalLinks.issues.length * 2
 
         return Math.max(0, Math.min(100, score))
     }
@@ -1028,6 +1218,67 @@ class TechnicalAuditService {
                 description: issue
             })
         })
+
+        // New SEO checks from PDF
+        // Title tag issues
+        if (!content.titleTag.exists) {
+            issues.push({
+                category: "Content",
+                severity: "critical",
+                title: "Missing Title Tag",
+                description: "No title tag found. This is essential for SEO and user experience.",
+                fix: "Add a descriptive title tag to the <head> section"
+            })
+        } else if (!content.titleTag.isOptimal) {
+            issues.push({
+                category: "Content",
+                severity: "warning",
+                title: "Title Tag Length Issue",
+                description: content.titleTag.issues.join(", "),
+                fix: "Keep title under 60 characters for optimal display in search results"
+            })
+        }
+
+        // Meta description issues
+        if (!content.metaDescription.exists) {
+            issues.push({
+                category: "Content",
+                severity: "warning",
+                title: "Missing Meta Description",
+                description: "No meta description found. This affects click-through rates from search results.",
+                fix: "Add a compelling meta description under 160 characters"
+            })
+        } else if (!content.metaDescription.isOptimal) {
+            issues.push({
+                category: "Content",
+                severity: "warning",
+                title: "Meta Description Length Issue",
+                description: content.metaDescription.issues.join(", "),
+                fix: "Keep meta description under 160 characters for optimal display"
+            })
+        }
+
+        // Readability issues
+        if (content.readability.score < 60) {
+            issues.push({
+                category: "Content",
+                severity: "info",
+                title: "Content Readability Issue",
+                description: content.readability.issues.join(", "),
+                fix: "Use shorter sentences and simpler words to improve readability"
+            })
+        }
+
+        // External links issues
+        if (!content.externalLinks.hasRelevantLinks) {
+            issues.push({
+                category: "Content",
+                severity: "info",
+                title: "No External Links",
+                description: "No external links found. Consider linking to authoritative sources.",
+                fix: "Add relevant external links to authoritative sources"
+            })
+        }
 
         // UX issues
         if (!ux.navigation.hasMainNav) {
