@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
 
         // If no data in DB, fallback to service (mock)
         if (topPages.length === 0) {
-            const servicePages = await searchConsoleService.getSearchAnalytics('https://example.com', startDate.toISOString(), endDate.toISOString(), ['page']);
+            const servicePages = await searchConsoleService.getSearchAnalytics('https://ucadesignlabs.in', startDate.toISOString(), endDate.toISOString(), ['page']);
             topPages = servicePages.map((p: any) => ({
                 path: p.keys?.[0] || '/',
                 clicks: p.clicks,
@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
         }
 
         if (topQueries.length === 0) {
-            const serviceQueries = await searchConsoleService.getSearchAnalytics('https://example.com', startDate.toISOString(), endDate.toISOString(), ['query']);
+            const serviceQueries = await searchConsoleService.getSearchAnalytics('https://ucadesignlabs.in', startDate.toISOString(), endDate.toISOString(), ['query']);
             topQueries = serviceQueries.map((q: any) => ({
                 keyword: q.keys?.[0] || '',
                 clicks: q.clicks,

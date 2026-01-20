@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
         const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
         // Use a placeholder site URL if not provided (in real app, this would come from the user's project settings)
-        const targetUrl = siteUrl || "https://example.com"
+        const targetUrl = siteUrl || "https://ucadesignlabs.in"
 
         // 1. Fetch data from GSC (or mock)
         // We fetch two types of data:
